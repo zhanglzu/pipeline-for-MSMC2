@@ -1,0 +1,25 @@
+需要有基因组的mask-bed文件（mapbility）
+  使用http://lh3lh3.users.sourceforge.net/snpable.shtmll来操作
+  ~/software/seqbility-20091110/splitfa Ptrichocarpa_210_v3.0.fa 35 | split -l 20000000
+  sh bwa_aln.sh
+  sh cat.pl.sh
+  ~/software/seqbility-20091110/gen_raw_mask.pl ptr_cat_call.sam > ptr_cat_rawMask_35.fa
+  ~/software/seqbility-20091110/gen_mask -l 35 -r 0.5 ptr_cat_rawMask_35.fa > ptr_cat_mask_35_50.fa
+  msmc-tools/makeMappabilityMask.py  ## 修改目录并使用python2.7
+
+MSMC 分析需要长片段的单倍型序列，比如大于100Kb（作者回答问题）
+  提取大于100kb的scaffold
+  
+Phasing使用的软件是shapeit
+  samtools 产生vcf文件（包含SNP和非SNP位点），粗过滤DP（30），输出只含有SNPvcf文件
+  shapeit 进行phase
+    extractPIRs --bam Ptes.Chr01 --vcf Chr01.filter_SNP.vcf --out Chr01.PIRsList --base-quality 20 --read-quality 20; shapeit -assemble --input-vcf Chr01.filter_SNP.vcf --input-pir Chr01.PIRsList -O Chr01_OUT --output-log Chr01.assemble; shapeit -convert --input-haps Chr01_OUT --output-vcf Chr01.phase_snp.vcf --output-log Chr01.convert
+  将phase的vcf和粗过滤的vcf合并
+  按照个体和scaffold进行分割
+
+产生个体maskbed和过滤后的vcf文件
+  perl 01.print.pl Shape_PIR_SNP/Ptes/SRR2748652.Chr01.vcf | python3 software/msmc-tools/bamCaller.py 22 SRR2748652.Chr01.mask.bed.gz | gzip -c > SRR2748652.Chr01.vcf.gz
+产生msmc输入文件
+  python3 ~/software/msmc-tools/generate_multihetsep.py --mask=SRR2748652.Chr01.mask.bed.gz --mask=cat_mask_35_50.fa_Chr01.mask.bed.gz SRR2748652.Chr01.vcf.gz > SRR2748652.Chr01.msmc.txt
+msmc
+  ~/software/msmc2/build/release/msmc2 -t 4 -I 0,1 -o SRR2748652 SRR2748652.Chr01.msmc.txt SRR2748652.Chr02.msmc.txt SRR2748652.Chr03.msmc.txt SRR2748652.Chr04.msmc.txt SRR2748652.Chr05.msmc.txt SRR2748652.Chr06.msmc.txt SRR2748652.Chr07.msmc.txt SRR2748652.Chr08.msmc.txt SRR2748652.Chr09.msmc.txt SRR2748652.Chr10.msmc.txt SRR2748652.Chr11.msmc.txt SRR2748652.Chr12.msmc.txt SRR2748652.Chr13.msmc.txt SRR2748652.Chr14.msmc.txt SRR2748652.Chr15.msmc.txt SRR2748652.Chr16.msmc.txt SRR2748652.Chr17.msmc.txt SRR2748652.Chr18.msmc.txt SRR2748652.Chr19.msmc.txt
